@@ -1,0 +1,27 @@
+# example script to calculate the vector from atom to voronoi centroid
+
+units          metal
+atom_style     atomic 
+dimension      3
+boundary       p p p
+
+read_restart      ./ZrCuAl-300xy-1.restart.7000000
+reset_timestep 0
+
+
+
+
+pair_style     eam/alloy
+
+#newton         on
+pair_coeff     * * ZrCuAl.lammps.eam Zr Cu Al
+
+neighbor       2.0 bin
+neigh_modify   every 4 delay 0 check yes
+
+
+compute v1 all voro_vec/atom
+dump    d1 all custom 1 dump.voro id type x y z c_v1[1] c_v1[2] c_v1[3]
+run  0
+jump SELF END
+

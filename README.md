@@ -19,23 +19,31 @@ FFT_LIB = -L/path/voro/lib/ -lvoro++   # directory where libvoro++.a locates
 See example directory for an example lammps script.
 
 ```
+# emperical radius from https://www.webelements.com
+variable radius1 equal 1.55
+variable radius2 equal 1.35
+variable radius3 equal 1.25
+variable max_edge_to_count equal 7 # >= 7
+variable edge_threshold equal 0.5
+variable face_threshold equal 0.001
 # For trilinic box, better to set a large cutoff to handle ghost atom correctly.
-comm_modify cutoff 10.0
-variable r atom (type==1)*1.55+(type==2)*1.35+(type==3)*1.25  # emperical radius from https://www.webelements.com
+variable maximum_cutoff equal 10.0 # maximum communication cutoff
 
-compute v1 all voro_vec/atom edge_histo 7 edge_threshold 0.5 face_threshold 0.001 radius v_r
-thermo_style custom c_v1[*]
+comm_modify cutoff ${maximum_cutoff}
+variable r atom (type==1)*${radius1}+(type==2)*${radius2}+(type==3)*${radius3}
 
+compute voro all voro_vec/atom edge_histo ${max_edge_to_count} edge_threshold ${edge_threshold} face_threshold ${face_threshold} radius v_r
+thermo_style custom c_voro[*]
 #                                                 dx       dy     dz     l
-#dump    d1 all custom 1 dump.voro id type x y z c_v1[1] c_v1[2] c_v1[3] c_v1[4] 
-dump    d1 all custom 1 dump.voro id type x y z c_v1[*]
+#dump    d1 all custom 1 dump.voro id type x y z c_voro[1] c_voro[2] c_voro[3] c_voro[4]
+dump    d1 all custom 1 dump.voro id type x y z c_voro[*]
 run  0
 ```
 
-c_v1[1-3] is the per-atom vector from one atom to the corresponding centroid of Voronoi cell.
-c_v1[4] is the the length of the vector.
-c_v1[5-8] is the number of 3-edge, 4-dege, 5-edge and 6-edge faces.
-c_v1[9] is the Voronoi volume, and c_v1[10] is the Voronoi coordination number.
+c_voro[1-3] is the per-atom vector from one atom to the corresponding centroid of Voronoi cell.
+c_voro[4] is the the length of the vector.
+c_voro[5-8] is the number of 3-edge, 4-dege, 5-edge and 6-edge faces.
+c_voro[9] is the Voronoi volume, and c_v1[10] is the Voronoi coordination number.
 
 
 In my experience, it's better to set a large cutoff to handle ghost atoms rightly for a triclinc box with a

@@ -49,7 +49,7 @@ ComputeVoroVec::ComputeVoroVec(LAMMPS *lmp, int narg, char **arg) :
 {
   int sgroup;
 
-  size_peratom_cols = 5;
+  size_peratom_cols = 6;
   peratom_flag = 1;
   comm_forward = 1;
   faces_flag = 0;
@@ -97,7 +97,7 @@ ComputeVoroVec::ComputeVoroVec(LAMMPS *lmp, int narg, char **arg) :
         sgroupbit = group->bitmask[sgroup];
         surface = VOROSURF_GROUP;
       }
-      size_peratom_cols = 6;
+      size_peratom_cols = 7;
       iarg += 2;
     } else if (strcmp(arg[iarg], "edge_histo") == 0) {
       if (iarg + 2 > narg) error->all(FLERR,"Illegal compute voronoi/atom command");

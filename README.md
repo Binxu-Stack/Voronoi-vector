@@ -35,7 +35,7 @@ run  0
 c_v1[1-3] is the per-atom vector from one atom to the corresponding centroid of Voronoi cell.
 c_v1[4] is the the length of the vector.
 c_v1[5-8] is the number of 3-edge, 4-dege, 5-edge and 6-edge faces.
-BTW, c_v1[9] is the Voronoi volume, and c_v1[10] is the Voronoi coordination number.
+c_v1[9] is the Voronoi volume, and c_v1[10] is the Voronoi coordination number.
 
 
 In my experience, it's better to set a large cutoff to handle ghost atoms rightly for a triclinc box with a

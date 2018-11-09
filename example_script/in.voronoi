@@ -21,8 +21,9 @@ neigh_modify   every 4 delay 0 check yes
 
 # For trilinic box, better to set a large cutoff to handle ghost atom correctly.
 comm_modify cutoff 10.0
+variable r atom (type==1)*1.55+(type==2)*1.35+(type==3)*1.25  # emperical radius from https://www.webelements.com
 
-compute v1 all voro_vec/atom edge_histo 7 edge_threshold 0.5 face_threshold 0.001
+compute v1 all voro_vec/atom edge_histo 7 edge_threshold 0.5 face_threshold 0.001 radius v_r
 thermo_style custom c_v1[*]
 
 #                                                 dx       dy     dz     l

@@ -21,14 +21,15 @@ See example directory for an example lammps script.
 ```
 # For trilinic box, better to set a large cutoff to handle ghost atom correctly.
 comm_modify cutoff 10.0
+variable r atom (type==1)*1.55+(type==2)*1.35+(type==3)*1.25  # emperical radius from https://www.webelements.com
 
-compute v1 all voro_vec/atom edge_histo 7 edge_threshold 0.5 face_threshold 0.001
+compute v1 all voro_vec/atom edge_histo 7 edge_threshold 0.5 face_threshold 0.001 radius v_r
+thermo_style custom c_v1[*]
 
-thermo_style custom c_v1[*] # total histgram of all voronoi faces
 #                                                 dx       dy     dz     l
 #dump    d1 all custom 1 dump.voro id type x y z c_v1[1] c_v1[2] c_v1[3] c_v1[4] 
 dump    d1 all custom 1 dump.voro id type x y z c_v1[*]
-run 0
+run  0
 ```
 
 c_v1[1-3] is the per-atom vector from one atom to the corresponding centroid of Voronoi cell.

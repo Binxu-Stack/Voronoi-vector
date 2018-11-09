@@ -22,9 +22,11 @@ neigh_modify   every 4 delay 0 check yes
 # For trilinic box, better to set a large cutoff to handle ghost atom correctly.
 comm_modify cutoff 10.0
 
-compute v1 all voro_vec/atom
+compute v1 all voro_vec/atom edge_histo 7 edge_threshold 0.5 face_threshold 0.001
+thermo_style custom c_v1[*]
 
 #                                                 dx       dy     dz     l
-dump    d1 all custom 1 dump.voro id type x y z c_v1[1] c_v1[2] c_v1[3] c_v1[4] 
+#dump    d1 all custom 1 dump.voro id type x y z c_v1[1] c_v1[2] c_v1[3] c_v1[4] 
+dump    d1 all custom 1 dump.voro id type x y z c_v1[*] 
 run  0
 

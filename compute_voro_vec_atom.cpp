@@ -97,11 +97,12 @@ ComputeVoroVec::ComputeVoroVec(LAMMPS *lmp, int narg, char **arg) :
         sgroupbit = group->bitmask[sgroup];
         surface = VOROSURF_GROUP;
       }
-      size_peratom_cols = 7;
+      ++size_peratom_cols;
       iarg += 2;
     } else if (strcmp(arg[iarg], "edge_histo") == 0) {
       if (iarg + 2 > narg) error->all(FLERR,"Illegal compute voronoi/atom command");
       maxedge = force->inumeric(FLERR,arg[iarg+1]);
+      size_peratom_cols += 4;
       iarg += 2;
     } else if (strcmp(arg[iarg], "face_threshold") == 0) {
       if (iarg + 2 > narg) error->all(FLERR,"Illegal compute voronoi/atom command");
@@ -495,9 +496,22 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
   std::vector<int> neigh, norder, vlist;
   std::vector<double> narea, vcell;
   bool have_narea = false;
+  int nf3,nf4,nf5,nf6;
+  int volume_index, coordination_index, surface_index;
+  int nf3_index, nf4_index, nf5_index, nf6_index;
+  volume_index = 4;
+  coordination_index = 5;
+  surface_index = 6;
+
+  if (maxedge > 0) {
+    volume_index += 4;
+    coordination_index += 4;
+    surface_index += 4;
+  }
+    
 
   // zero out surface area if surface computation was requested
-  if (surface != VOROSURF_NONE && !onlyGroup) voro[i][5] = 0.0;
+  if (surface != VOROSURF_NONE && !onlyGroup) voro[i][surface_index] = 0.0;
 
   if (i < atom->nlocal && (mask[i] & groupbit)) {
     // cell volume
@@ -505,7 +519,7 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
     c.centroid(voro[i][0],voro[i][1],voro[i][2]);
     voro[i][3] = sqrt(voro[i][0]*voro[i][0] + voro[i][1]*voro[i][1] + voro[i][2]*voro[i][2]);
 
-    voro[i][4] = c.volume();
+    voro[i][volume_index] = c.volume();
 
     // number of cell faces
     c.neighbors(neigh);
@@ -515,20 +529,20 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
       // count only faces above area threshold
       c.face_areas(narea);
       have_narea = true;
-      voro[i][5] = 0.0;
+      voro[i][coordination_index] = 0.0;
       for (j=0; j<narea.size(); ++j)
-        if (narea[j] > fthresh) voro[i][5] += 1.0;
+        if (narea[j] > fthresh) voro[i][coordination_index] += 1.0;
     } else {
       // unthresholded face count
-      voro[i][5] = neighs;
+      voro[i][coordination_index] = neighs;
     }
 
     // cell surface area
     if (surface == VOROSURF_ALL) {
-      voro[i][6] = c.surface_area();
+      voro[i][surface_index] = c.surface_area();
     } else if (surface == VOROSURF_GROUP) {
       if (!have_narea) c.face_areas(narea);
-      voro[i][6] = 0.0;
+      voro[i][surface_index] = 0.0;
 
       // each entry in neigh should correspond to an entry in narea
       if (neighs != narea.size())
@@ -537,12 +551,14 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
       // loop over all faces (neighbors) and check if they are in the surface group
       for (j=0; j<neighs; ++j)
         if (neigh[j] >= 0 && mask[neigh[j]] & sgroupbit)
-          voro[i][6] += narea[j];
+          voro[i][surface_index] += narea[j];
     }
 
     // histogram of number of face edges
 
     if (maxedge>0) {
+      nf3 = nf4 = nf5 = nf6 = 0; // initialize nf5 count
+      //printf("Maxedge: %i\n",maxedge);
       if (ethresh > 0) {
         // count only edges above length threshold
         c.vertices(vcell);
@@ -562,6 +578,15 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
           }
           // counted edges above threshold, now put into the correct bin
           if (nedge>0) {
+	    if(nedge == 3){
+	      ++nf3;
+	    }else if (nedge == 4){
+	      ++nf4;
+	    }else if (nedge == 5){
+	      ++nf5;
+	    }else if (nedge == 6){
+	      ++nf6;
+	    }
             if (nedge<=maxedge)
               edge[nedge-1]++;
             else
@@ -571,21 +596,35 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
       } else {
         // unthresholded edge counts
         c.face_orders(norder);
-        for (j=0; j<voro[i][5]; ++j)
+        for (j=0; j<voro[i][coordination_index]; ++j)
           if (norder[j]>0) {
+	    if(norder[j] == 3){
+	      ++nf3;
+	    }else if (norder[j] == 4){
+	      ++nf4;
+	    }else if (norder[j] == 5){
+	      ++nf5;
+	    }else if (norder[j] == 6){
+	      ++nf6;
+	    }
             if (norder[j]<=maxedge)
               edge[norder[j]-1]++;
             else
               edge[maxedge]++;
           }
       }
+      voro[i][4] = nf3;
+      voro[i][5] = nf4;
+      voro[i][6] = nf5;
+      voro[i][7] = nf6;
     }
+
 
     // store info for local faces
 
     if (faces_flag) {
-      if (nfaces+voro[i][5] > nfacesmax) {
-        while (nfacesmax < nfaces+voro[i][5]) nfacesmax += FACESDELTA;
+      if (nfaces+voro[i][coordination_index] > nfacesmax) {
+        while (nfacesmax < nfaces+voro[i][coordination_index]) nfacesmax += FACESDELTA;
         memory->grow(faces,nfacesmax,size_local_cols,"compute/voronoi/atom:faces");
         array_local = faces;
       }

@@ -503,7 +503,9 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
     // cell volume
     //voro[i][0] = c.volume();
     c.centroid(voro[i][0],voro[i][1],voro[i][2]);
-    voro[i][3] = c.volume();
+    voro[i][3] = sqrt(voro[i][0]*voro[i][0] + voro[i][1]*voro[i][1] + voro[i][2]*voro[i][2]);
+
+    voro[i][4] = c.volume();
 
     // number of cell faces
     c.neighbors(neigh);
@@ -513,20 +515,20 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
       // count only faces above area threshold
       c.face_areas(narea);
       have_narea = true;
-      voro[i][4] = 0.0;
+      voro[i][5] = 0.0;
       for (j=0; j<narea.size(); ++j)
-        if (narea[j] > fthresh) voro[i][4] += 1.0;
+        if (narea[j] > fthresh) voro[i][5] += 1.0;
     } else {
       // unthresholded face count
-      voro[i][4] = neighs;
+      voro[i][5] = neighs;
     }
 
     // cell surface area
     if (surface == VOROSURF_ALL) {
-      voro[i][5] = c.surface_area();
+      voro[i][6] = c.surface_area();
     } else if (surface == VOROSURF_GROUP) {
       if (!have_narea) c.face_areas(narea);
-      voro[i][5] = 0.0;
+      voro[i][6] = 0.0;
 
       // each entry in neigh should correspond to an entry in narea
       if (neighs != narea.size())
@@ -535,7 +537,7 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
       // loop over all faces (neighbors) and check if they are in the surface group
       for (j=0; j<neighs; ++j)
         if (neigh[j] >= 0 && mask[neigh[j]] & sgroupbit)
-          voro[i][5] += narea[j];
+          voro[i][6] += narea[j];
     }
 
     // histogram of number of face edges
@@ -569,7 +571,7 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
       } else {
         // unthresholded edge counts
         c.face_orders(norder);
-        for (j=0; j<voro[i][4]; ++j)
+        for (j=0; j<voro[i][5]; ++j)
           if (norder[j]>0) {
             if (norder[j]<=maxedge)
               edge[norder[j]-1]++;
@@ -582,8 +584,8 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
     // store info for local faces
 
     if (faces_flag) {
-      if (nfaces+voro[i][4] > nfacesmax) {
-        while (nfacesmax < nfaces+voro[i][4]) nfacesmax += FACESDELTA;
+      if (nfaces+voro[i][5] > nfacesmax) {
+        while (nfacesmax < nfaces+voro[i][5]) nfacesmax += FACESDELTA;
         memory->grow(faces,nfacesmax,size_local_cols,"compute/voronoi/atom:faces");
         array_local = faces;
       }
@@ -612,7 +614,7 @@ void ComputeVoroVec::processCell(voronoicell_neighbor &c, int i)
     }
 
 
-  } else if (i < atom->nlocal) voro[i][0] = voro[i][1] = voro[i][2] =  voro[i][3] = voro[i][4] = 0.0;
+  } else if (i < atom->nlocal) voro[i][0] = voro[i][1] = voro[i][2] =  voro[i][3] = voro[i][4] = voro[i][5] = 0.0;
 }
 
 double ComputeVoroVec::memory_usage()
